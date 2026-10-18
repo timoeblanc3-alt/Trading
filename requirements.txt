@@ -1,1 +1,2 @@
 anthropic>=1.15
+hyperliquid-python-sdk>=0.24,<0.25

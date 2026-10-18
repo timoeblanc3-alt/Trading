@@ -193,9 +193,20 @@ def main():
     w.add_argument("--train", type=int, default=365)
     w.add_argument("--test", type=int, default=90)
     sub.add_parser("step")
+    lv = sub.add_parser("live")
+    lv.add_argument("--dry-run", action="store_true", help="calcule tout mais n'envoie aucun ordre")
+    sub.add_parser("notify-test")
     sub.add_parser("status")
     args = ap.parse_args()
     cfg = Config()
+    if args.cmd == "live":
+        from . import live
+        raise SystemExit(live.main(args.dry_run))
+    if args.cmd == "notify-test":
+        from . import notify
+        ok = notify.send("Agent de trading", "Les notifications fonctionnent ✅", tags=["white_check_mark"])
+        print("Notification envoyée." if ok else "NTFY_TOPIC absente ou envoi impossible.")
+        return
     {"backtest": cmd_backtest, "walkforward": cmd_walkforward, "step": cmd_step, "status": cmd_status}[args.cmd](cfg, args)
 
 
