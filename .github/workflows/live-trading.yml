@@ -5,7 +5,7 @@ name: Trading réel quotidien
 # arrêt des ouvertures après 6 $ de perte cumulée. Créer le fichier live/STOP bloque toute ouverture.
 on:
   schedule:
-    - cron: "25 0 * * *"
+    - cron: "55 6 * * *"   # 07:55 heure de Paris en hiver (08:55 en été)
   workflow_dispatch:
     inputs:
       mode:

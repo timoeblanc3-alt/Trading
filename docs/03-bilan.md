@@ -7,11 +7,11 @@
 | Récolter un maximum d'infos sur les grands traders et leurs méthodes | Bilan de 20 traders (Livermore, Tudor Jones, Soros, Druckenmiller, Simons, Turtles, Minervini…), méthodes d'analyse, gestion du risque, psychologie, résultats des IA qui tradent | ✅ `docs/01-bilan-recherche-trading.md` |
 | Un agent qui analyse le marché comme un expert | Stratégie de suivi de tendance (méthode des Turtles), filtres MM200, ADX et funding, analyste IA Claude qui peut refuser un trade (si une clé Anthropic est ajoutée) | ✅ `docs/02-strategie.md` |
 | Se connecter à votre compte Hyperliquid | Clé API « trader sans retirer », secrets GitHub, compte unifié pris en charge | ✅ |
-| Prendre les trades automatiquement | Cycle réel chaque jour à 02:25 (Paris), stop et objectif posés sur l'exchange | ✅ actif |
+| Prendre les trades automatiquement | Cycle réel chaque jour vers 8h (Paris), stop et objectif posés sur l'exchange | ✅ actif |
 | 27 $ de capital, 2 $ de risque max | Une position à la fois, levier 3x max, marge isolée, arrêt après 6 $ de perte | ✅ |
 | Être prévenu à chaque trade sur le téléphone | Notifications ntfy : ouverture, fermeture, stop remonté, refus de l'IA, erreurs, arrêt | ✅ testé |
 | Prendre un trade aujourd'hui pour vérifier que tout marche | Aller-retour réel sur BTC (≈ 11,50 $), stop et objectif posés puis vérifiés, position refermée. Coût ≈ 1 centime | ✅ réussi |
-| Continuer à améliorer la stratégie en arrière-plan | Session de recherche automatique chaque dimanche à 7h47 : rapport + proposition, appliquée seulement avec votre accord | ✅ 1re le 25/10 |
+| Continuer à améliorer la stratégie en arrière-plan | Session de recherche automatique chaque dimanche à 7h56 : rapport + proposition, appliquée seulement avec votre accord | ✅ 1re le 25/10 |
 | Pas un trade par jour, seulement des trades validés, avec un fort taux de réussite | Consigne donnée au chercheur : augmenter la réussite ET le gain moyen, jamais l'un sans l'autre | ✅ |
 | Backtester sur tout l'historique, pas seulement le Bitcoin | 226 variantes testées sur 30 cryptos et 6 ans + une stratégie de rotation | ✅ `docs/recherche/2026-10-18.md` |
 
@@ -19,11 +19,12 @@
 
 | Quoi | Quand |
 |---|---|
-| Trading réel (BTC, ETH, SOL) | Chaque jour à 02:25 (Paris) |
-| Trading fictif (pour comparer) | Chaque jour à 02:20 |
+| Trading réel (BTC, ETH, SOL) | Chaque jour vers 7h55 (Paris) |
+| Trading fictif (pour comparer) | Chaque jour vers 7h50 |
+| Radar crypto (projets prometteurs) | Chaque jour à 7h56 |
 | Stops et objectifs | En permanence, sur Hyperliquid |
 | Notifications | À chaque événement |
-| Recherche d'amélioration | Chaque dimanche à 7h47 |
+| Recherche d'amélioration | Chaque dimanche à 7h56 |
 
 ## Ce qu'il faut savoir honnêtement
 
