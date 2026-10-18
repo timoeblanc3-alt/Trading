@@ -125,3 +125,20 @@ class AnalystVetoTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ExploreTests(unittest.TestCase):
+    def test_breakout_trade_is_stopped_at_about_minus_one_r(self):
+        from agent import explore as E
+        n = 260
+        cs = [{"t": i * E.DAY, "open": 100.0, "high": 101.0, "low": 99.0, "close": 100.0 + 0.5 * (i % 2),
+               "volume": 1.0} for i in range(n)]
+        cs[-3].update(close=110.0, high=110.5)          # cassure à la hausse
+        cs[-2].update(open=110.0, high=110.2, low=80.0, close=81.0)  # effondrement le lendemain
+        x = E.features(cs)
+        v = E.Variant("test", filters=[])
+        trades = E.simulate("T", x, v, {"btc": {}})
+        self.assertEqual(len(trades), 1)
+        self.assertEqual(trades[0]["side"], "long")
+        self.assertLess(trades[0]["r"], -1.0)
+        self.assertGreater(trades[0]["r"], -1.3)
