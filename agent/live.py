@@ -282,6 +282,8 @@ class LiveTrader:
                                                        slippage=self.lcfg.entry_slippage))
             if kind != "filled":
                 self.log(f"  ✗ Ordre non exécuté : {detail}")
+                notify.send(f"Ordre refusé : {sig.coin}", f"Hyperliquid a refusé l'ouverture : {detail}",
+                            priority=5, tags=["rotating_light"])
                 return False
             size, fill_px = float(detail["totalSz"]), float(detail["avgPx"])
             self.log(f"  ✓ Exécuté : {size} @ {fill_px}")
