@@ -196,7 +196,8 @@ def main():
     lv = sub.add_parser("live")
     lv.add_argument("--dry-run", action="store_true", help="calcule tout mais n'envoie aucun ordre")
     sub.add_parser("notify-test")
-    sub.add_parser("execution-test")
+    et = sub.add_parser("execution-test")
+    et.add_argument("--side", choices=["long", "short"], default="long")
     sub.add_parser("status")
     args = ap.parse_args()
     cfg = Config()
@@ -205,7 +206,7 @@ def main():
         raise SystemExit(live.main(args.dry_run))
     if args.cmd == "execution-test":
         from . import execution_test
-        raise SystemExit(execution_test.run())
+        raise SystemExit(execution_test.run(args.side))
     if args.cmd == "notify-test":
         from . import notify
         ok = notify.send("Agent de trading", "Les notifications fonctionnent ✅", tags=["white_check_mark"])

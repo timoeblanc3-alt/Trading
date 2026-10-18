@@ -194,6 +194,26 @@ class LiveTrader:
         for coin, (cs, _) in candles.items():
             st["last_bar"][coin] = cs[-1]["t"]
         self.save()
+        if self.send:
+            notify.send("Rapport du jour", self._daily_report(capital, candles), priority=2, tags=["sunrise"])
+
+    def _daily_report(self, capital, candles):
+        """Résumé envoyé chaque matin, même sans trade : capital, positions et niveaux à surveiller."""
+        st = self.state
+        start = st["start_equity"] or capital
+        lines = [f"Capital : {capital:.2f} $ ({capital - start:+.2f} $ depuis le départ)"]
+        for coin, pos in st["positions"].items():
+            lines.append(f"Position {pos['side']} {coin} depuis {pos['entry']}, stop {pos['stop']:.4f}")
+        if not st["positions"]:
+            lines.append("Aucune position ouverte.")
+        for coin, (cs, x) in candles.items():
+            i, p = len(cs) - 1, cs[-1]["close"]
+            # une cassure ne compte que du bon côté de la MM200 : le seuil effectif est le plus exigeant des deux
+            buy = max(x["dc_up"][i], x["ema200"][i])
+            sell = min(x["dc_lo"][i], x["ema200"][i])
+            lines.append(f"{coin} {p:,.2f} : achat si clôture > {buy:,.2f} ({buy / p - 1:+.1%}) · "
+                         f"vente si clôture < {sell:,.2f} ({sell / p - 1:+.1%}) · ADX {x['adx'][i]:.0f}")
+        return "\n".join(lines)
 
     def _equity(self, us, positions):
         """Valeur du compte. En compte unifié (« Account Type » unifié ou portfolio margin), les USDC du

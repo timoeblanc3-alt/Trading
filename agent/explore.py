@@ -18,6 +18,9 @@ from . import indicators as ind
 
 FEE = 0.00045
 SLIP = 0.0005
+# Funding moyen payé par les positions acheteuses (taux de base Hyperliquid : 0,01 % par 8 h).
+# Approximation : les longs le paient, les shorts le reçoivent.
+FUNDING_H = 0.0000125
 DAY = 86_400_000
 
 
@@ -135,6 +138,12 @@ FILTERS = {
 }
 
 
+def _funding_r(pos, exit_t):
+    hours = max(0.0, (exit_t - pos["t"]) / 3_600_000)
+    cost = FUNDING_H * hours * pos["entry"]
+    return (-cost if pos["side"] == "long" else cost) / pos["risk"]
+
+
 def simulate(coin, x, v, ctx, start=None, end=None):
     """Trades d'une variante sur un actif. Une seule position à la fois par actif."""
     up, lo = x[f"up{v.entry}"], x[f"lo{v.entry}"]
@@ -158,7 +167,7 @@ def simulate(coin, x, v, ctx, start=None, end=None):
                 gross = (fill - pos["entry"]) if long else (pos["entry"] - fill)
                 fees = FEE * (pos["entry"] + fill)
                 trades.append({"coin": coin, "t": pos["t"], "side": pos["side"], "why": why,
-                               "r": (gross - fees) / pos["risk"]})
+                               "r": (gross - fees) / pos["risk"] + _funding_r(pos, t)})
                 pos = None
             else:  # stop suiveur, mêmes règles que l'agent
                 move = (c - pos["entry"]) if long else (pos["entry"] - c)

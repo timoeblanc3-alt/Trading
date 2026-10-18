@@ -17,7 +17,8 @@ COIN = "BTC"
 NOTIONAL = 11.5
 
 
-def run():
+def run(side="long"):
+    is_long = side == "long"
     key, address = os.environ.get("HL_API_PRIVATE_KEY"), os.environ.get("HL_ACCOUNT_ADDRESS")
     if not key or not address:
         print("HL_API_PRIVATE_KEY ou HL_ACCOUNT_ADDRESS manquante.")
@@ -51,10 +52,11 @@ def run():
     szd = hyperliquid.asset_contexts()[COIN]["sz_decimals"]
     mid = hyperliquid.mid_prices()[COIN]
     size = floor_sz(NOTIONAL / mid, szd)
-    log(f"1. Ouverture test : achat {size} {COIN} (≈ {size * mid:.2f} $), marge isolée 3x")
+    log(f"1. Ouverture test : {'achat' if is_long else 'vente à découvert'} {size} {COIN} "
+        f"(≈ {size * mid:.2f} $), marge isolée 3x")
     lev = ex.update_leverage(3, COIN, is_cross=False)
     log(f"   Levier : {lev.get('status') if isinstance(lev, dict) else lev}")
-    kind, detail = _status(ex.market_open(COIN, True, size, slippage=0.01))
+    kind, detail = _status(ex.market_open(COIN, is_long, size, slippage=0.01))
     if kind != "filled":
         log(f"   ✗ Ordre refusé : {detail}")
         notify.send("Test d'exécution : ÉCHEC", "\n".join(report), priority=5, tags=["rotating_light"])
@@ -64,9 +66,10 @@ def run():
 
     ok = True
     try:
-        for label, tpsl, px in (("Stop", "sl", fill * 0.97), ("Objectif", "tp", fill * 1.03)):
-            limit = round_px(px * 0.95, szd)
-            k, d = _status(ex.order(COIN, False, size, limit,
+        sl, tp = (fill * 0.97, fill * 1.03) if is_long else (fill * 1.03, fill * 0.97)
+        for label, tpsl, px in (("Stop", "sl", sl), ("Objectif", "tp", tp)):
+            limit = round_px(px * (0.95 if is_long else 1.05), szd)
+            k, d = _status(ex.order(COIN, not is_long, size, limit,
                                     {"trigger": {"triggerPx": round_px(px, szd), "isMarket": True, "tpsl": tpsl}},
                                     reduce_only=True))
             log(f"2. {label} à {round_px(px, szd)} : {'✓ posé' if k != 'error' else '✗ ' + str(d)}")
@@ -88,6 +91,6 @@ def run():
         ok &= clean and k == "filled"
 
     log("RÉSULTAT : " + ("✅ toute la chaîne fonctionne" if ok else "❌ un problème a été détecté"))
-    notify.send("Test d'exécution : " + ("réussi ✅" if ok else "ÉCHEC ❌"), "\n".join(report),
+    notify.send(f"Test d'exécution ({side}) : " + ("réussi ✅" if ok else "ÉCHEC ❌"), "\n".join(report),
                 priority=4 if ok else 5, tags=["white_check_mark" if ok else "rotating_light"])
     return 0 if ok else 1

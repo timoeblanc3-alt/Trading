@@ -3,7 +3,13 @@ name: Test d'exécution réelle
 # Lancement manuel uniquement : ouvre la plus petite position BTC possible (≈ 11 $), pose stop et
 # objectif, vérifie, puis ferme tout. Coût : quelques centimes.
 on:
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      side:
+        description: "Sens du test"
+        type: choice
+        options: [long, short]
+        default: long
 
 permissions:
   contents: read
@@ -22,9 +28,9 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -r requirements.txt
-      - name: Aller-retour réel sur BTC
+      - name: Aller-retour réel sur BTC (${{ inputs.side }})
         env:
           HL_API_PRIVATE_KEY: ${{ secrets.HL_API_PRIVATE_KEY }}
           HL_ACCOUNT_ADDRESS: ${{ secrets.HL_ACCOUNT_ADDRESS }}
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
-        run: python -m agent execution-test | tee -a "$GITHUB_STEP_SUMMARY"
+        run: python -m agent execution-test --side "${{ inputs.side }}" | tee -a "$GITHUB_STEP_SUMMARY"
