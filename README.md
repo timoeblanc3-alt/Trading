@@ -7,13 +7,23 @@ Agent qui lit le marché Hyperliquid, applique des stratégies issues du bilan
 ## Commandes
 
 ```bash
-python3 -m agent backtest --bars 3000 --interval 4h   # test sur l'historique
+python3 -m agent backtest --bars 2500 --interval 1d   # test sur l'historique
+python3 -m agent walkforward --interval 1d            # test hors échantillon (paramètres choisis sur le passé)
 python3 -m agent step                                 # un cycle sur le marché réel (fictif)
 python3 -m agent status                               # état du portefeuille fictif
 python3 -m unittest                                   # tests
 ```
 
-Aucune dépendance externe (Python 3.10+). L'état et le journal des trades sont écrits dans `data/`.
+Python 3.10+. Seul l'analyste IA utilise une dépendance (`pip install -r requirements.txt`) et la
+variable `ANTHROPIC_API_KEY` ; sans elle, il est désactivé. La stratégie est expliquée dans
+`docs/02-strategie.md`.
+
+## Automatisation
+
+`.github/workflows/paper-trading.yml` lance un cycle chaque jour à 00:20 UTC et enregistre le
+résultat dans `paper/` : `state.json` (portefeuille), `journal.csv` (trades), `cycles.log`
+(historique) et `analyst.jsonl` (avis de l'IA). Pour activer l'analyste, ajoutez le secret
+`ANTHROPIC_API_KEY` dans GitHub (Settings → Secrets and variables → Actions).
 
 ## Architecture
 
@@ -25,6 +35,8 @@ Aucune dépendance externe (Python 3.10+). L'état et le journal des trades sont
 | `agent/risk.py` | Veto : 1 % de risque par trade, 3 % ouverts, 2 % sur les cryptos corrélées, levier 3x max, −3 % par jour, −10 % → taille ÷ 2, −15 % → arrêt |
 | `agent/portfolio.py` | Portefeuille simulé avec frais, slippage, stops suiveurs et journal en R |
 | `agent/backtest.py` | Backtest multi-actifs (entrée à l'ouverture de la bougie suivante) |
+| `agent/research.py` | Walk-forward hors échantillon, historique long Binance (si le domaine est autorisé) |
+| `agent/analyst.py` | Analyste Claude : recherche web, droit de veto uniquement |
 
 ## Limites connues
 
