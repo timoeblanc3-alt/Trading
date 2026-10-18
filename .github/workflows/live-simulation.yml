@@ -1,0 +1,29 @@
+name: Simulation sur le compte réel
+
+# Lit le vrai compte Hyperliquid (solde, positions) et calcule ce que l'agent ferait,
+# SANS jamais envoyer d'ordre : la clé privée n'est pas transmise à ce workflow.
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  simulation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - run: python -m unittest
+      - name: Test de notification
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: python -m agent notify-test
+      - name: Cycle en simulation
+        env:
+          HL_ACCOUNT_ADDRESS: ${{ secrets.HL_ACCOUNT_ADDRESS }}
+        run: python -m agent live --dry-run | tee -a "$GITHUB_STEP_SUMMARY"
