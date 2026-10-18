@@ -50,6 +50,11 @@ Je recommande d'attendre **au moins 20 à 30 trades réels** (plusieurs mois) et
 - la plus forte baisse est restée supportable pour vous.
 
 Ensuite, on augmente le capital **progressivement** en gardant 1 à 2 % de risque par trade, jamais plus.
+
+**À activer au moment d'augmenter le capital** (décidé le 18/10/2026) :
+- **l'analyste IA** : clé API Anthropic avec limite de dépenses, à ajouter au secret GitHub `ANTHROPIC_API_KEY`
+  (moins de 1 $/mois) ;
+- **les ordres limite à l'entrée** (frais 0,015 % au lieu de 0,045 %), utiles seulement avec plus de capital.
 Ne mettez jamais d'argent dont vous avez besoin.
 
 ## Pour tout arrêter
