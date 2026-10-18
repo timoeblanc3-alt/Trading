@@ -2,6 +2,8 @@
 
 from dataclasses import dataclass, field
 
+from .strategies import Params
+
 
 @dataclass
 class RiskConfig:
@@ -14,6 +16,10 @@ class RiskConfig:
     drawdown_halt: float = 0.15         # arrêt complet, revue humaine
     max_leverage: float = 3.0           # notionnel total / capital
     min_reward_risk: float = 2.0
+    # Règles du compte réel : risque fixe en dollars, ordre minimum Hyperliquid, arrêt sur perte cumulée.
+    risk_usd: float = None              # remplace risk_per_trade si renseigné
+    min_notional: float = 0.0
+    halt_loss_usd: float = None
 
 
 @dataclass
@@ -37,6 +43,7 @@ class Config:
     risk: RiskConfig = field(default_factory=RiskConfig)
     market: MarketConfig = field(default_factory=MarketConfig)
     execution: ExecutionConfig = field(default_factory=ExecutionConfig)
+    params: Params = field(default_factory=Params)
     # Suivi fictif versionné dans git : chaque exécution planifiée le met à jour.
     state_path: str = "paper/state.json"
     journal_path: str = "paper/journal.csv"

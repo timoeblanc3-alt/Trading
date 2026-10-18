@@ -14,8 +14,9 @@ class Params:
     dc_entry: int = 20      # cassure du plus haut/bas sur N bougies
     dc_exit: int = 10       # canal du stop suiveur
     stop_atr: float = 2.0   # stop initial en ATR
-    target_atr: float = 4.0
+    target_atr: float = 4.0  # 0 = pas d'objectif : on laisse courir jusqu'au stop suiveur
     adx_min: float = 20.0
+    long_only: bool = False
     pullback: bool = False  # pullback désactivé : aucun avantage mesuré sur 6 ans (voir docs/02-strategie.md)
 
 
@@ -65,11 +66,14 @@ def donchian_breakout(coin, x, i, funding=0.0):
     close, atr = x["close"][i], x["atr"][i]
     if x["adx"][i] < p.adx_min:
         return None
+    # sans objectif, on place la cible hors d'atteinte : seul le stop suiveur fait sortir
+    target = (p.target_atr or 1000.0) * atr
     if close > x["dc_up"][i] and close > x["ema200"][i] and funding < FUNDING_EXTREME:
-        return Signal(coin, "long", close, close - p.stop_atr * atr, close + p.target_atr * atr, "donchian",
+        return Signal(coin, "long", close, close - p.stop_atr * atr, close + target, "donchian",
                       f"cassure du plus haut {p.dc_entry} bougies, au-dessus de la MM200, ADX {x['adx'][i]:.0f}")
-    if close < x["dc_lo"][i] and close < x["ema200"][i] and funding > -FUNDING_EXTREME:
-        return Signal(coin, "short", close, close + p.stop_atr * atr, close - p.target_atr * atr, "donchian",
+    if (not p.long_only and close < x["dc_lo"][i] and close < x["ema200"][i]
+            and funding > -FUNDING_EXTREME):
+        return Signal(coin, "short", close, close + p.stop_atr * atr, close - target, "donchian",
                       f"cassure du plus bas {p.dc_entry} bougies, sous la MM200, ADX {x['adx'][i]:.0f}")
     return None
 

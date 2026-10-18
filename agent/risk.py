@@ -31,10 +31,12 @@ def trading_halted(cfg, equity, peak, day_start_equity):
     return None
 
 
-def evaluate(signal, cfg, equity, peak, day_start_equity, positions, groups):
+def evaluate(signal, cfg, equity, peak, day_start_equity, positions, groups, start_equity=None):
     halt = trading_halted(cfg, equity, peak, day_start_equity)
     if halt:
         return Decision(False, reason=halt)
+    if cfg.halt_loss_usd is not None and start_equity and start_equity - equity >= cfg.halt_loss_usd:
+        return Decision(False, reason=f"perte cumulée ≥ {cfg.halt_loss_usd:.2f} $ : arrêt, revue humaine nécessaire")
     if any(p["coin"] == signal.coin for p in positions):
         return Decision(False, reason="position déjà ouverte sur cet actif")
     if len(positions) >= cfg.max_positions:
@@ -49,6 +51,8 @@ def evaluate(signal, cfg, equity, peak, day_start_equity, positions, groups):
         risk_pct /= 2
 
     budget = equity * risk_pct
+    if cfg.risk_usd is not None:
+        budget = cfg.risk_usd * (risk_pct / cfg.risk_per_trade)  # divisé par 2 en drawdown, comme risk_pct
     open_risk = sum(position_risk(p) for p in positions)
     budget = min(budget, equity * cfg.max_open_risk - open_risk)
 
@@ -67,6 +71,9 @@ def evaluate(signal, cfg, equity, peak, day_start_equity, positions, groups):
         size = max(0.0, max_notional / signal.entry)
     if size <= 0:
         return Decision(False, reason=f"levier maximal {cfg.max_leverage}x atteint")
+    if size * signal.entry < cfg.min_notional:
+        return Decision(False, reason=f"position de {size * signal.entry:.2f} $ sous le minimum de "
+                                      f"{cfg.min_notional:.0f} $ de l'exchange")
 
     return Decision(True, size=size, risk_amount=size * signal.risk_per_unit,
                     reason=f"risque {size * signal.risk_per_unit / equity:.2%} du capital")

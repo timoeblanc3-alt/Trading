@@ -13,7 +13,7 @@ import time
 from dataclasses import replace
 from datetime import datetime, timezone
 
-from . import analyst, backtest, hyperliquid, research, strategies
+from . import analyst, backtest, hyperliquid, profiles, research, rotation, strategies
 from .config import Config
 from .portfolio import Portfolio, stats
 
@@ -119,19 +119,17 @@ def open_signal(cfg, pf, sig, now, mids, x, i, ctx):
     return f"→ OUVERT {sig.side} ({sig.strategy}) : {sig.reason}, {d.reason}. Analyste : {verdict.summary}"
 
 
-def cmd_step(cfg, args):
+def run_profile(name, cfg, market, mids, ctxs, now):
+    """Un cycle de paper trading pour un profil ; renvoie les lignes du compte rendu."""
     os.makedirs(os.path.dirname(cfg.state_path), exist_ok=True)
     state = load_state(cfg)
     last_bar = (state or {}).get("last_bar", {})
     pf = Portfolio(cfg, state)
-    mids = hyperliquid.mid_prices()
-    ctxs = hyperliquid.asset_contexts()
-    now = int(time.time() * 1000)
-    lines = [f"Cycle du {fmt_ts(now)} UTC"]
+    lines = [f"[{name}]"]
 
     for coin in cfg.market.coins:
-        cs = hyperliquid.candles(coin, cfg.market.interval, cfg.market.history_bars)
-        x = strategies.compute(cs)
+        cs = market[coin]
+        x = strategies.compute(cs, cfg.params)
         i = len(cs) - 1
         bar_t = cs[i]["t"]
         funding = ctxs.get(coin, {}).get("funding", 0.0)
@@ -157,27 +155,44 @@ def cmd_step(cfg, args):
 
     eq = pf.mark(now, mids)
     save_state(cfg, pf, last_bar)
-    lines.append(f"Capital fictif : {eq:.2f} $ (départ {cfg.starting_equity:.0f} $, plus haut {pf.peak:.2f} $)")
-    print("\n".join(lines))
+    lines.append(f"  Capital fictif : {eq:.2f} $ ({eq - cfg.starting_equity:+.2f} $), {len(pf.trades)} trade(s) clôturé(s)")
     with open(cfg.cycles_path, "a") as f:
-        f.write("\n".join(lines) + "\n\n")
+        f.write(f"Cycle du {fmt_ts(now)} UTC\n" + "\n".join(lines) + "\n\n")
+    return lines
+
+
+def cmd_step(cfg, args):
+    """Fait avancer toutes les stratégies suivies en fictif (agent/profiles.py) et la rotation."""
+    mids = hyperliquid.mid_prices()
+    ctxs = hyperliquid.asset_contexts()
+    now = int(time.time() * 1000)
+    market = {c: hyperliquid.candles(c, cfg.market.interval, cfg.market.history_bars) for c in cfg.market.coins}
+    print(f"Cycle du {fmt_ts(now)} UTC")
+    for name, pcfg in profiles.configs().items():
+        print("\n".join(run_profile(name, pcfg, market, mids, ctxs, now)))
+    lines = ["[rotation]"]
+    rotation.step(profiles.LIVE_START, log=lines.append)
+    print("\n".join(lines))
+    os.makedirs(os.path.dirname(rotation.LOG), exist_ok=True)
+    with open(rotation.LOG, "a") as f:
+        f.write(f"Cycle du {fmt_ts(now)} UTC\n" + "\n".join(lines) + "\n\n")
 
 
 def cmd_status(cfg, args):
-    state = load_state(cfg)
-    if not state:
-        print("Aucun état : lancez d'abord `python -m agent step`.")
-        return
-    pf = Portfolio(cfg, state)
     mids = hyperliquid.mid_prices()
-    eq = pf.equity(mids)
-    print(f"Capital fictif : {eq:.2f} $ (départ {cfg.starting_equity:.0f} $)")
-    for p in pf.positions:
-        print(f"  {p['coin']} {p['side']} {p['size']:.6f} @ {p['entry']:.2f}, stop {p['stop']:.2f}, "
-              f"objectif {p['target']:.2f}, prix {mids[p['coin']]:.2f}")
-    if pf.trades:
-        print("Trades clôturés :")
-        print_stats(stats(pf.trades, cfg.starting_equity, [eq]))
+    for name, pcfg in profiles.configs().items():
+        state = load_state(pcfg)
+        if not state:
+            print(f"[{name}] aucun état : lancez d'abord `python -m agent step`.")
+            continue
+        pf = Portfolio(pcfg, state)
+        eq = pf.equity(mids)
+        print(f"[{name}] capital fictif : {eq:.2f} $ (départ {pcfg.starting_equity:.2f} $)")
+        for p in pf.positions:
+            print(f"  {p['coin']} {p['side']} {p['size']:.6f} @ {p['entry']:.2f}, stop {p['stop']:.2f}, "
+                  f"prix {mids[p['coin']]:.2f}")
+        if pf.trades:
+            print_stats(stats(pf.trades, pcfg.starting_equity, [eq]))
 
 
 def main():

@@ -52,7 +52,8 @@ class Portfolio:
         fill = self._fill(signal.entry, signal.side, opening=True)
         signal = replace(signal, entry=fill)
         decision = risk.evaluate(signal, self.cfg.risk, eq, self.peak, self.day_start_equity,
-                                 self.positions, self.cfg.market.correlated_groups)
+                                 self.positions, self.cfg.market.correlated_groups,
+                                 start_equity=self.cfg.starting_equity)
         if not decision.approved:
             return decision
         fee = fill * decision.size * self.cfg.execution.taker_fee
