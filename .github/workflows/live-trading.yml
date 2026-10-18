@@ -1,0 +1,50 @@
+name: Trading réel quotidien
+
+# Ordres RÉELS sur Hyperliquid, une fois par jour après la clôture de la bougie journalière.
+# Limites (agent/live.py) : 27 $ de capital max, 2 $ de risque max, une position à la fois,
+# arrêt des ouvertures après 6 $ de perte cumulée. Créer le fichier live/STOP bloque toute ouverture.
+on:
+  schedule:
+    - cron: "25 0 * * *"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "simulation = calcule tout sans envoyer d'ordre"
+        type: choice
+        options: [simulation, reel]
+        default: simulation
+
+permissions:
+  contents: write
+
+concurrency:
+  group: trading
+  cancel-in-progress: false
+
+jobs:
+  cycle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - run: python -m unittest
+      - name: Cycle de trading
+        env:
+          HL_API_PRIVATE_KEY: ${{ secrets.HL_API_PRIVATE_KEY }}
+          HL_ACCOUNT_ADDRESS: ${{ secrets.HL_ACCOUNT_ADDRESS }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          LIVE_TRADING: ${{ (github.event_name == 'schedule' || inputs.mode == 'reel') && 'true' || 'false' }}
+        run: python -m agent live | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Enregistrer l'état
+        if: always()
+        run: |
+          git config user.name "trading-bot"
+          git config user.email "trading-bot@users.noreply.github.com"
+          git add live/ || true
+          git diff --cached --quiet || git commit -m "Trading réel : cycle du $(date -u +%Y-%m-%d)"
+          git pull --rebase -q origin master && git push

@@ -88,6 +88,8 @@ class LiveTrader:
         return {"start_equity": None, "peak": 0.0, "positions": {}, "last_bar": {}}
 
     def save(self):
+        if not self.send:  # une simulation ne doit pas consommer la bougie du prochain cycle réel
+            return
         os.makedirs(os.path.dirname(self.lcfg.state_path), exist_ok=True)
         with open(self.lcfg.state_path, "w") as f:
             json.dump(self.state, f, indent=2)
