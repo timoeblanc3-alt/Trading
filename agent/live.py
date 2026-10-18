@@ -136,7 +136,7 @@ class LiveTrader:
         self.log(f"Compte : {equity:.2f} USDC (capital utilisé {capital:.2f} $, départ {st['start_equity']}) "
                  f"{'— ORDRES RÉELS' if self.send else '— simulation'}")
         if equity < MIN_NOTIONAL / self.lcfg.max_leverage:
-            self.log("  ⚠ Solde perps presque vide : transférez vos USDC du compte Spot vers Perps sur Hyperliquid.")
+            self._diagnose_empty()
 
         candles = {}
         for coin in self.cfg.market.coins:
@@ -192,6 +192,20 @@ class LiveTrader:
         for coin, (cs, _) in candles.items():
             st["last_bar"][coin] = cs[-1]["t"]
         self.save()
+
+    def _diagnose_empty(self):
+        """Compte perps vide : mauvaise adresse, fonds sur le Spot, ou compte unifié."""
+        role = hyperliquid.user_role(self.addr)
+        spot = {b["coin"]: float(b["total"]) for b in self.info.spot_user_state(self.addr).get("balances", [])}
+        self.log(f"  ⚠ Compte perps vide. Type d'adresse : {role}. Soldes Spot : "
+                 f"{', '.join(f'{c} {v:g}' for c, v in spot.items() if v) or 'aucun'}")
+        if role == "agent":
+            self.log("    → HL_ACCOUNT_ADDRESS contient l'adresse de l'API wallet : mettez l'adresse du compte "
+                     "principal (celle affichée en haut de Hyperliquid, 0xBA5A…).")
+        elif spot.get("USDC", 0) > 0:
+            self.log("    → Vos USDC sont sur le compte Spot : transférez-les vers Perps (Hyperliquid → Transfer).")
+        elif role == "missing":
+            self.log("    → Adresse inconnue de Hyperliquid : vérifiez qu'elle est complète et correcte.")
 
     def _manage(self, coin, pos, known, orders, x, i, bar_t, szd):
         size = abs(float(pos["szi"]))

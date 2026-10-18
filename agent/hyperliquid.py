@@ -68,3 +68,11 @@ def asset_contexts():
             "sz_decimals": asset["szDecimals"],
         }
     return out
+
+
+def user_role(address):
+    """« user », « agent » (adresse d'un API wallet), « vault », « subAccount » ou « missing »."""
+    try:
+        return _post({"type": "userRole", "user": address}).get("role", "inconnu")
+    except Exception:
+        return "inconnu"

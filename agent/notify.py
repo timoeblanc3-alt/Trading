@@ -5,13 +5,14 @@ Il est lu dans la variable NTFY_TOPIC ; sans elle, aucune notification n'est env
 
 import json
 import os
+import urllib.error
 import urllib.request
 
 NTFY_URL = "https://ntfy.sh/"
 
 
 def send(title, message, priority=3, tags=None):
-    topic = os.environ.get("NTFY_TOPIC")
+    topic = os.environ.get("NTFY_TOPIC", "").strip().strip('"').strip("'")
     if not topic:
         return False
     body = {"topic": topic, "title": title, "message": message, "priority": priority, "tags": tags or []}
@@ -20,6 +21,9 @@ def send(title, message, priority=3, tags=None):
     try:
         with urllib.request.urlopen(req, timeout=15):
             return True
-    except Exception as e:  # une notification ratée ne doit jamais bloquer le trading
+    except urllib.error.HTTPError as e:  # une notification ratée ne doit jamais bloquer le trading
+        print(f"  (notification refusée par ntfy : {e.code} {e.read().decode(errors='replace')[:200]})")
+        return False
+    except Exception as e:
         print(f"  (notification non envoyée : {e})")
         return False
