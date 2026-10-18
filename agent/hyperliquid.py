@@ -76,3 +76,12 @@ def user_role(address):
         return _post({"type": "userRole", "user": address}).get("role", "inconnu")
     except Exception:
         return "inconnu"
+
+
+def user_abstraction(address):
+    """Mode du compte : « default » (Spot et Perps séparés) ou un mode unifié où le Spot sert de marge."""
+    try:
+        res = _post({"type": "userAbstraction", "user": address})
+        return res if isinstance(res, str) else str(res)
+    except Exception:
+        return "inconnu"

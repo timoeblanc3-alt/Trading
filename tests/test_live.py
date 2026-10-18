@@ -90,6 +90,7 @@ class CycleTests(unittest.TestCase):
             mock.patch.object(live.hyperliquid, "mid_prices", return_value=MIDS),
             mock.patch.object(live.analyst, "review", return_value=Verdict(True, "ok", [], [])),
             mock.patch.object(live.notify, "send", return_value=False),
+            mock.patch.object(live.hyperliquid, "user_abstraction", return_value="default"),
         ]
         for p in self.patches:
             p.start()
@@ -149,6 +150,16 @@ class CycleTests(unittest.TestCase):
                                return_value=Signal("BTC", "long", 82000, 77000, 92000, "donchian", "t")):
             live.LiveTrader(ex, FakeInfo(), "0xabc", self.lcfg, send=False, log=lambda m: None).cycle()
         self.assertEqual(ex.calls, [])
+
+
+    def test_unified_account_uses_spot_usdc(self):
+        info = FakeInfo(equity=0.0)
+        info.spot_user_state = lambda addr: {"balances": [{"coin": "USDC", "total": "25.70", "hold": "0"}]}
+        ex = FakeExchange()
+        with mock.patch.object(live.hyperliquid, "user_abstraction", return_value="unifiedAccount"):
+            t = self.run_cycle(info, ex)
+        self.assertEqual(t.state["start_equity"], 25.70)
+        self.assertIn("open", [c[0] for c in ex.calls])
 
 
 if __name__ == "__main__":

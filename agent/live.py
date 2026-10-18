@@ -123,9 +123,9 @@ class LiveTrader:
     # --- cycle ------------------------------------------------------------------------------
     def cycle(self):
         us = self.info.user_state(self.addr)
-        equity = float(us["marginSummary"]["accountValue"])
         positions = {p["position"]["coin"]: p["position"] for p in us["assetPositions"]
                      if float(p["position"]["szi"]) != 0}
+        equity = self._equity(us, positions)
         orders = self.info.frontend_open_orders(self.addr)
         meta = hyperliquid.asset_contexts()
         mids = hyperliquid.mid_prices()
@@ -194,6 +194,18 @@ class LiveTrader:
         for coin, (cs, _) in candles.items():
             st["last_bar"][coin] = cs[-1]["t"]
         self.save()
+
+    def _equity(self, us, positions):
+        """Valeur du compte. En compte unifié (« Account Type » unifié ou portfolio margin), les USDC du
+        Spot servent directement de marge aux perps : le solde perps affiché reste alors à 0."""
+        perps = float(us["marginSummary"]["accountValue"])
+        mode = hyperliquid.user_abstraction(self.addr)
+        if mode in ("default", "inconnu"):
+            return perps
+        spot = {b["coin"]: float(b["total"]) for b in self.info.spot_user_state(self.addr).get("balances", [])}
+        unrealized = sum(float(p.get("unrealizedPnl", 0)) for p in positions.values())
+        self.log(f"  Compte unifié ({mode}) : USDC Spot {spot.get('USDC', 0):.2f}, PnL latent {unrealized:+.2f}")
+        return spot.get("USDC", 0.0) + unrealized
 
     def _diagnose_empty(self):
         """Compte perps vide : mauvaise adresse, fonds sur le Spot, ou compte unifié."""
