@@ -86,5 +86,42 @@ class PortfolioTests(unittest.TestCase):
         self.assertFalse(pf.positions)
 
 
+class AnalystVetoTests(unittest.TestCase):
+    def setUp(self):
+        import tempfile
+        from agent import __main__ as cli
+        self.cli = cli
+        self.tmp = tempfile.mkdtemp()
+        self.cfg = Config(starting_equity=10000, analyst_log_path=f"{self.tmp}/a.jsonl")
+        self.x = {"rsi": [55.0], "adx": [30.0], "atr": [600.0], "ema200": [55000.0]}
+
+    def _open(self, verdict):
+        from unittest import mock
+        from agent.analyst import Verdict
+        pf = Portfolio(self.cfg)
+        with mock.patch.object(self.cli.analyst, "review", return_value=Verdict(verdict, "test", [], [])):
+            msg = self.cli.open_signal(self.cfg, pf, sig(), 0, {"BTC": 60000}, self.x, 0, {})
+        return pf, msg
+
+    def test_veto_blocks_trade(self):
+        pf, msg = self._open(False)
+        self.assertFalse(pf.positions)
+        self.assertIn("REFUSÉ", msg)
+
+    def test_approval_still_goes_through_risk_manager(self):
+        pf, msg = self._open(True)
+        self.assertEqual(len(pf.positions), 1)
+        self.assertAlmostEqual(pf.positions[0]["size"] * pf.positions[0]["initial_risk"], 100, delta=1)
+
+    def test_analyst_disabled_without_key(self):
+        import os
+        from unittest import mock
+        from agent import analyst
+        with mock.patch.dict(os.environ, {}, clear=True):
+            v = analyst.review(sig(), {})
+        self.assertTrue(v.approved)
+        self.assertFalse(v.available)
+
+
 if __name__ == "__main__":
     unittest.main()

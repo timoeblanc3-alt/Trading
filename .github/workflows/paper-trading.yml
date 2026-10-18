@@ -1,0 +1,36 @@
+name: Paper trading quotidien
+
+on:
+  schedule:
+    - cron: "20 0 * * *"   # chaque jour à 00:20 UTC, juste après la clôture de la bougie journalière
+  workflow_dispatch: {}     # bouton « Run workflow » pour lancer un cycle à la main
+
+permissions:
+  contents: write
+
+concurrency:
+  group: paper-trading
+  cancel-in-progress: false
+
+jobs:
+  cycle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - run: python -m unittest
+      - name: Cycle de paper trading
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python -m agent step | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Enregistrer l'état du portefeuille fictif
+        run: |
+          git config user.name "paper-trading-bot"
+          git config user.email "paper-trading-bot@users.noreply.github.com"
+          git add paper/
+          git diff --cached --quiet || git commit -m "Paper trading : cycle du $(date -u +%Y-%m-%d)"
+          git push

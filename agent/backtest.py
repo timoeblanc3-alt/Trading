@@ -7,11 +7,16 @@ from . import strategies
 from .portfolio import Portfolio, stats
 
 
-def run(cfg, data):
-    """`data` : {coin: [bougies]}. Renvoie (stats, trades, courbe de capital)."""
-    xs = {coin: strategies.compute(c) for coin, c in data.items()}
+def run(cfg, data, params=strategies.Params(), start=None, end=None, circuit_breaker=True):
+    """`data` : {coin: [bougies]}. Les indicateurs sont calculés sur tout l'historique, mais on ne trade
+    qu'entre `start` et `end` (timestamps ms), ce qui permet le walk-forward sans période de chauffe perdue.
+    `circuit_breaker=False` mesure l'avantage brut de la stratégie, sans l'arrêt à −15 %."""
+    if not circuit_breaker:
+        cfg = replace(cfg, risk=replace(cfg.risk, drawdown_halt=1.01, drawdown_reduce=1.01, daily_loss_limit=1.01))
+    xs = {coin: strategies.compute(c, params) for coin, c in data.items()}
     index = {coin: {c["t"]: i for i, c in enumerate(cs)} for coin, cs in data.items()}
-    timeline = sorted({c["t"] for cs in data.values() for c in cs})
+    timeline = sorted({c["t"] for cs in data.values() for c in cs
+                       if (start is None or c["t"] >= start) and (end is None or c["t"] < end)})
 
     pf = Portfolio(cfg)
     pending = {}

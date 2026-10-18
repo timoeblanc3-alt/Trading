@@ -1,5 +1,6 @@
 """Portefeuille simulé (paper trading) : positions, frais, slippage, journal des trades en R."""
 
+from dataclasses import replace
 from datetime import datetime, timezone
 
 from . import risk
@@ -47,11 +48,13 @@ class Portfolio:
 
     def try_open(self, signal, ts_ms, prices):
         eq = self.mark(ts_ms, prices)
+        # Taille calculée sur le prix d'exécution réel (slippage inclus) pour que le risque reste à 1 %.
+        fill = self._fill(signal.entry, signal.side, opening=True)
+        signal = replace(signal, entry=fill)
         decision = risk.evaluate(signal, self.cfg.risk, eq, self.peak, self.day_start_equity,
                                  self.positions, self.cfg.market.correlated_groups)
         if not decision.approved:
             return decision
-        fill = self._fill(signal.entry, signal.side, opening=True)
         fee = fill * decision.size * self.cfg.execution.taker_fee
         self.balance -= fee
         self.positions.append({

@@ -13,7 +13,7 @@ import time
 from dataclasses import replace
 from datetime import datetime, timezone
 
-from . import backtest, hyperliquid, strategies
+from . import analyst, backtest, hyperliquid, research, strategies
 from .config import Config
 from .portfolio import Portfolio, stats
 
@@ -55,6 +55,25 @@ def cmd_backtest(cfg, args):
         print(f"\nRéférence : buy & hold BTC sur la période {btc[-1]['close'] / btc[0]['open'] - 1:+.1%}")
 
 
+def cmd_walkforward(cfg, args):
+    data = research.load(cfg, args.source, args.interval, args.bars)
+    for coin, cs in data.items():
+        print(f"{coin}: {len(cs)} bougies {args.interval} du {fmt_ts(cs[0]['t'])} au {fmt_ts(cs[-1]['t'])}")
+    windows = research.walk_forward(cfg, data, args.train, args.test)
+    print(f"\nWalk-forward : entraînement {args.train} bougies, test {args.test} bougies (hors échantillon)")
+    print(f"{'période testée':25s} {'paramètres choisis':34s} {'trades':>6s} {'R moy.':>7s} {'défaut R':>9s}")
+    for w in windows:
+        p = w["params"]
+        label = f"DC{p.dc_entry} stop{p.stop_atr:g} obj{p.target_atr:g} {'+pb' if p.pullback else 'sans pb'}"
+        print(f"{fmt_ts(w['start'])[:10]} → {fmt_ts(w['end'])[:10]}  {label:34s} {w['oos']['trades']:6d} "
+              f"{w['oos']['avg_r']:+7.2f} {w['baseline']['avg_r']:+9.2f}")
+    opt = research.summarize([t for w in windows for t in w["oos_trades"]])
+    base = research.summarize([t for w in windows for t in w["baseline_trades"]])
+    for name, s in (("Paramètres optimisés", opt), ("Paramètres par défaut", base)):
+        print(f"\n{name} (hors échantillon) : {s['trades']} trades, réussite {s['win_rate']:.0%}, "
+              f"espérance {s['avg_r']:+.2f} R, total {s['total_r']:+.1f} R")
+
+
 def load_state(cfg):
     if os.path.exists(cfg.state_path):
         with open(cfg.state_path) as f:
@@ -63,7 +82,6 @@ def load_state(cfg):
 
 
 def save_state(cfg, pf, last_bar):
-    os.makedirs(os.path.dirname(cfg.state_path), exist_ok=True)
     with open(cfg.state_path, "w") as f:
         json.dump({**pf.to_state(), "last_bar": last_bar}, f, indent=2)
 
@@ -81,14 +99,35 @@ def journal(cfg, trade):
                     f"{trade['pnl']:.2f}", f"{trade['r']:.2f}", trade["exit_reason"], trade["reason"]])
 
 
+def open_signal(cfg, pf, sig, now, mids, x, i, ctx):
+    """Signal → contrôle du stop → analyste IA (veto seulement) → gestionnaire de risque → ouverture."""
+    if not ((sig.side == "long" and sig.entry > sig.stop) or (sig.side == "short" and sig.entry < sig.stop)):
+        return f"→ signal {sig.side} ignoré : prix déjà au-delà du stop"
+    context = {"funding_horaire": ctx.get("funding"), "open_interest": ctx.get("open_interest"),
+               "rsi14": round(x["rsi"][i], 1), "adx14": round(x["adx"][i], 1),
+               "atr14": round(x["atr"][i], 4), "mm200": round(x["ema200"][i], 4)}
+    verdict = analyst.review(sig, context)
+    with open(cfg.analyst_log_path, "a") as f:
+        f.write(json.dumps({"date": fmt_ts(now), "coin": sig.coin, "side": sig.side, "approved": verdict.approved,
+                            "available": verdict.available, "summary": verdict.summary,
+                            "risks": verdict.risks, "sources": verdict.sources}, ensure_ascii=False) + "\n")
+    if not verdict.approved:
+        return f"→ signal {sig.side} REFUSÉ par l'analyste : {verdict.summary}"
+    d = pf.try_open(sig, now, mids)
+    if not d.approved:
+        return f"→ signal {sig.side} refusé par le risk manager : {d.reason}"
+    return f"→ OUVERT {sig.side} ({sig.strategy}) : {sig.reason}, {d.reason}. Analyste : {verdict.summary}"
+
+
 def cmd_step(cfg, args):
+    os.makedirs(os.path.dirname(cfg.state_path), exist_ok=True)
     state = load_state(cfg)
     last_bar = (state or {}).get("last_bar", {})
     pf = Portfolio(cfg, state)
     mids = hyperliquid.mid_prices()
     ctxs = hyperliquid.asset_contexts()
     now = int(time.time() * 1000)
-    print(f"Cycle du {fmt_ts(now)} UTC")
+    lines = [f"Cycle du {fmt_ts(now)} UTC"]
 
     for coin in cfg.market.coins:
         cs = hyperliquid.candles(coin, cfg.market.interval, cfg.market.history_bars)
@@ -111,20 +150,17 @@ def cmd_step(cfg, args):
         elif new_bar:
             sig = strategies.best_signal(coin, x, i, funding, cfg.risk.min_reward_risk)
             if sig:
-                mid = mids[coin]
-                valid = (sig.side == "long" and mid > sig.stop) or (sig.side == "short" and mid < sig.stop)
-                d = pf.try_open(replace(sig, entry=mid), now, mids) if valid else None
-                if d and d.approved:
-                    line += f"  → OUVERT {sig.side} ({sig.strategy}) : {sig.reason}, {d.reason}"
-                else:
-                    line += f"  → signal {sig.side} refusé : {d.reason if d else 'prix déjà au-delà du stop'}"
+                line += "  " + open_signal(cfg, pf, replace(sig, entry=mids[coin]), now, mids, x, i, ctxs.get(coin, {}))
             else:
                 line += "  | pas de setup"
-        print(line)
+        lines.append(line)
 
     eq = pf.mark(now, mids)
     save_state(cfg, pf, last_bar)
-    print(f"\nCapital fictif : {eq:.2f} $ (départ {cfg.starting_equity:.0f} $, plus haut {pf.peak:.2f} $)")
+    lines.append(f"Capital fictif : {eq:.2f} $ (départ {cfg.starting_equity:.0f} $, plus haut {pf.peak:.2f} $)")
+    print("\n".join(lines))
+    with open(cfg.cycles_path, "a") as f:
+        f.write("\n".join(lines) + "\n\n")
 
 
 def cmd_status(cfg, args):
@@ -150,11 +186,17 @@ def main():
     b = sub.add_parser("backtest")
     b.add_argument("--bars", type=int, default=3000)
     b.add_argument("--interval", default="4h")
+    w = sub.add_parser("walkforward")
+    w.add_argument("--source", choices=["hl", "binance"], default="hl")
+    w.add_argument("--interval", default="1d")
+    w.add_argument("--bars", type=int, default=5000)
+    w.add_argument("--train", type=int, default=365)
+    w.add_argument("--test", type=int, default=90)
     sub.add_parser("step")
     sub.add_parser("status")
     args = ap.parse_args()
     cfg = Config()
-    {"backtest": cmd_backtest, "step": cmd_step, "status": cmd_status}[args.cmd](cfg, args)
+    {"backtest": cmd_backtest, "walkforward": cmd_walkforward, "step": cmd_step, "status": cmd_status}[args.cmd](cfg, args)
 
 
 if __name__ == "__main__":

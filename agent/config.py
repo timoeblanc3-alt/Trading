@@ -21,7 +21,7 @@ class MarketConfig:
     coins: list = field(default_factory=lambda: ["BTC", "ETH", "SOL"])
     # Les grandes cryptos sont fortement corrélées : on les traite comme un seul groupe.
     correlated_groups: list = field(default_factory=lambda: [{"BTC", "ETH", "SOL"}])
-    interval: str = "4h"
+    interval: str = "1d"
     history_bars: int = 400
 
 
@@ -37,5 +37,8 @@ class Config:
     risk: RiskConfig = field(default_factory=RiskConfig)
     market: MarketConfig = field(default_factory=MarketConfig)
     execution: ExecutionConfig = field(default_factory=ExecutionConfig)
-    state_path: str = "data/paper_state.json"
-    journal_path: str = "data/journal.csv"
+    # Suivi fictif versionné dans git : chaque exécution planifiée le met à jour.
+    state_path: str = "paper/state.json"
+    journal_path: str = "paper/journal.csv"
+    cycles_path: str = "paper/cycles.log"
+    analyst_log_path: str = "paper/analyst.jsonl"
