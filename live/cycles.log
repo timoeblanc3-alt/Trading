@@ -75,3 +75,14 @@ Compte : 20.68 USDC (capital utilisé 20.68 $, départ 25.67624597) — ORDRES R
   ETH 2,321.55 : pas de setup
   SOL 100.53 : pas de setup
 
+Cycle réel du 2026-10-30 13:40 UTC
+  Compte unifié (unifiedAccount) : USDC Spot 20.68, PnL latent +0.00
+Compte : 20.68 USDC (capital utilisé 20.68 $, départ 25.67624597) — ORDRES RÉELS
+  BTC 77,083.50 : pas de setup
+  ETH 2,227.65 : pas de setup
+  SOL : signal short (cassure du plus bas 20 bougies, sous la MM200, ADX 28). Analyste : Analyste injoignable (réseau) : signal mécanique seul.
+  → OUVERTURE short 0.11 SOL ≈ 95.5755 (≈ 10.51 $), stop 104.5972, objectif 77.6385, risque ≈ 0.99 $
+  ✓ Exécuté : 0.11 @ 95.594
+    STOP SOL à 104.6 : resting 
+    OBJECTIF SOL à 77.639 : resting 
+
