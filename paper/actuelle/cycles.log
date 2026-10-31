@@ -89,3 +89,10 @@ Cycle du 2026-10-30 13:37 UTC
   SOL       95.68  funding +0.0013 %/h  → OUVERT short (donchian) : cassure du plus bas 20 bougies, sous la MM200, ADX 28, risque 7.78% du capital. Analyste : Analyste injoignable (réseau) : signal mécanique seul.
   Capital fictif : 25.68 $ (-0.02 $), 0 trade(s) clôturé(s)
 
+Cycle du 2026-10-31 13:06 UTC
+[actuelle]
+  BTC   77,499.50  funding +0.0013 %/h  | pas de setup
+  ETH    2,248.25  funding +0.0013 %/h  | pas de setup
+  SOL       95.91  funding +0.0013 %/h  | position short depuis 95.63, stop 104.60
+  Capital fictif : 25.63 $ (-0.07 $), 0 trade(s) clôturé(s)
+
