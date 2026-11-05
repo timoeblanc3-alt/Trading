@@ -13,12 +13,12 @@
       "strategy": "donchian",
       "reason": "cassure du plus bas 20 bougies, sous la MM200, ADX 28",
       "analyst": "Analyste injoignable (r\u00e9seau) : signal m\u00e9canique seul.",
-      "last_trail_bar": 1793664000000
+      "last_trail_bar": 1793750400000
     }
   },
   "last_bar": {
-    "BTC": 1793664000000,
-    "ETH": 1793664000000,
-    "SOL": 1793664000000
+    "BTC": 1793750400000,
+    "ETH": 1793750400000,
+    "SOL": 1793750400000
   }
 }
