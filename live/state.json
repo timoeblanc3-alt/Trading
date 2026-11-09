@@ -6,19 +6,19 @@
       "side": "short",
       "entry": 95.594,
       "size": 0.11,
-      "stop": 104.59723847562087,
+      "stop": 95.594,
       "target": 77.63852304875827,
       "initial_risk": 9.003238475620876,
       "opened": "2026-10-30 13:40",
       "strategy": "donchian",
       "reason": "cassure du plus bas 20 bougies, sous la MM200, ADX 28",
       "analyst": "Analyste injoignable (r\u00e9seau) : signal m\u00e9canique seul.",
-      "last_trail_bar": 1794009600000
+      "last_trail_bar": 1794096000000
     }
   },
   "last_bar": {
-    "BTC": 1794009600000,
-    "ETH": 1794009600000,
-    "SOL": 1794009600000
+    "BTC": 1794096000000,
+    "ETH": 1794096000000,
+    "SOL": 1794096000000
   }
 }
