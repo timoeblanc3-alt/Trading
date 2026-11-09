@@ -152,3 +152,10 @@ Cycle du 2026-11-08 13:53 UTC
   SOL       89.20  funding +0.0013 %/h  | position short depuis 95.63, stop 104.60
   Capital fictif : 27.12 $ (+1.42 $), 0 trade(s) clôturé(s)
 
+Cycle du 2026-11-09 16:52 UTC
+[actuelle]
+  BTC   74,995.50  funding +0.0013 %/h  | pas de setup
+  ETH    2,133.85  funding +0.0013 %/h  → signal short refusé par le risk manager : maximum de 1 positions atteint
+  SOL       86.99  funding -0.0013 %/h  | position short depuis 95.63, stop 95.63
+  Capital fictif : 27.62 $ (+1.92 $), 0 trade(s) clôturé(s)
+
