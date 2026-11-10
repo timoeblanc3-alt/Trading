@@ -1,13 +1,28 @@
 {
-  "balance": 1000.0,
+  "balance": 999.8871737020913,
   "peak": 1000.0,
   "day": "2026-11-10",
   "day_start_equity": 1000.0,
-  "positions": [],
+  "positions": [
+    {
+      "coin": "SOL",
+      "side": "short",
+      "entry": 84.47424175,
+      "size": 2.9680657827724213,
+      "stop": 87.84343931227882,
+      "target": 78.31712137544238,
+      "initial_stop": 87.84343931227882,
+      "initial_risk": 3.3691975622788135,
+      "strategy": "donchian",
+      "reason": "cassure du plus bas 20 bougies, sous la MM200, ADX 40",
+      "opened": 1794323721137,
+      "fees": 0.11282629790871923
+    }
+  ],
   "trades": [],
   "last_bar": {
-    "BTC": 1794283200000,
-    "ETH": 1794283200000,
-    "SOL": 1794283200000
+    "BTC": 1794297600000,
+    "ETH": 1794297600000,
+    "SOL": 1794297600000
   }
 }
