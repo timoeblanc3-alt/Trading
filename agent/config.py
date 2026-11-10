@@ -20,6 +20,7 @@ class RiskConfig:
     risk_usd: float = None              # remplace risk_per_trade si renseigné
     min_notional: float = 0.0
     halt_loss_usd: float = None
+    capital_fraction: float = None      # si renseigné : position = cette part du capital (remplace le risque fixe)
 
 
 @dataclass

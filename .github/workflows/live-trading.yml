@@ -1,7 +1,7 @@
 name: Trading réel quotidien
 
 # Ordres RÉELS sur Hyperliquid, une fois par jour après la clôture de la bougie journalière.
-# Limites (agent/live.py) : 27 $ de capital max, 2 $ de risque max, une position à la fois,
+# Limites (agent/live.py) : 27 $ de capital max, position = 100 % du capital, une position à la fois,
 # arrêt des ouvertures après 6 $ de perte cumulée. Créer le fichier live/STOP bloque toute ouverture.
 on:
   schedule:

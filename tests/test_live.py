@@ -60,15 +60,21 @@ class PlanEntryTests(unittest.TestCase):
         return Signal("BTC", "long", 82000.0, stop, 92000.0, "donchian", "test")
 
     def test_two_dollar_risk_on_small_account(self):
-        size, why = live.plan_entry(self.sig(77000.0), 82000.0, 27.0, 2.0, live.LiveConfig(), 5)
+        size, why = live.plan_entry(self.sig(77000.0), 82000.0, 27.0, 2.0, live.LiveConfig(capital_fraction=None), 5)
         self.assertIsNone(why)
         self.assertAlmostEqual(size, 0.0004)
         self.assertLessEqual(size * 5000, 2.0)
 
     def test_below_exchange_minimum_is_skipped(self):
-        size, why = live.plan_entry(self.sig(77000.0), 82000.0, 27.0, 0.27, live.LiveConfig(), 5)
+        size, why = live.plan_entry(self.sig(77000.0), 82000.0, 27.0, 0.27, live.LiveConfig(capital_fraction=None), 5)
         self.assertEqual(size, 0.0)
         self.assertIn("minimum", why)
+
+    def test_full_capital_sizing(self):
+        size, why = live.plan_entry(self.sig(77000.0), 82000.0, 22.0, 2.0, live.LiveConfig(), 5)
+        self.assertIsNone(why)
+        self.assertAlmostEqual(size, 0.00026)            # 22 $ × 98 % ÷ 82 000, arrondi à 5 décimales
+        self.assertLessEqual(size * 82000, 22.0)
 
     def test_leverage_cap(self):
         size, _ = live.plan_entry(self.sig(81900.0), 82000.0, 27.0, 2.0, live.LiveConfig(), 5)

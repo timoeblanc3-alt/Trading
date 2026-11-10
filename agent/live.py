@@ -26,7 +26,10 @@ MIN_NOTIONAL = 10.0  # minimum Hyperliquid par ordre, en USDC
 @dataclass
 class LiveConfig:
     max_capital: float = 27.0       # capital que l'agent a le droit d'utiliser
-    max_risk_usd: float = 2.0       # perte maximale par trade (et au total) si le stop est touché
+    max_risk_usd: float = 2.0       # perte maximale par trade si capital_fraction est None
+    # Choix du propriétaire (10/11/2026) : chaque position vaut 100 % du capital (levier 1x).
+    # La perte si le stop est touché varie alors avec la distance du stop (≈ 5 à 10 % du capital).
+    capital_fraction: float = 1.0
     halt_loss_usd: float = 6.0      # perte cumulée qui arrête toute nouvelle ouverture (≈ 3 stops)
     max_leverage: int = 3
     entry_slippage: float = 0.01    # prix limite de l'ordre au marché
@@ -53,13 +56,14 @@ def plan_entry(sig, mid, capital, risk_usd, lcfg, sz_decimals):
     if dist <= 0 or (sig.side == "long" and mid <= sig.stop) or (sig.side == "short" and mid >= sig.stop):
         return 0.0, "prix déjà au-delà du stop"
     size = risk_usd / dist
+    if lcfg.capital_fraction:  # taille fixe en part du capital ; 2 % de marge pour frais et glissement
+        size = capital * lcfg.capital_fraction * 0.98 / mid
     max_notional = capital * lcfg.max_leverage
     if size * mid > max_notional:
         size = max_notional / mid
     size = floor_sz(size, sz_decimals)
     if size * mid < MIN_NOTIONAL:
-        return 0.0, (f"position de {size * mid:.2f} $ sous le minimum de {MIN_NOTIONAL:.0f} $ "
-                     f"(stop trop large pour {risk_usd:.2f} $ de risque)")
+        return 0.0, f"position de {size * mid:.2f} $ sous le minimum de {MIN_NOTIONAL:.0f} $"
     return size, None
 
 

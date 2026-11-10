@@ -1,5 +1,5 @@
 """Stratégies suivies en fictif, toutes avec EXACTEMENT les règles du compte réel (agent/live.py) :
-25,70 $ de départ, 2 $ de risque par trade, une position à la fois, levier 3x max, ordre minimum
+25,70 $ de départ, chaque position vaut 100 % du capital, une position à la fois, levier 3x max, ordre minimum
 de 10 $, arrêt après 6 $ de perte cumulée. Seule la stratégie change d'un profil à l'autre, ce qui
 permet de les comparer sur les mêmes semaines de marché, sans argent en jeu."""
 
@@ -10,7 +10,7 @@ LIVE_START = 25.70
 
 
 def live_rules():
-    return RiskConfig(risk_usd=2.0, min_notional=10.0, halt_loss_usd=6.0, max_positions=1,
+    return RiskConfig(risk_usd=2.0, capital_fraction=1.0, min_notional=10.0, halt_loss_usd=6.0, max_positions=1,
                       max_leverage=3.0, max_open_risk=1.0, max_correlated_risk=1.0,
                       daily_loss_limit=1.01, drawdown_halt=1.01, drawdown_reduce=0.10)
 

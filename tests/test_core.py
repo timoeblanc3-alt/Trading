@@ -145,16 +145,18 @@ class ExploreTests(unittest.TestCase):
 
 
 class PaperProfileTests(unittest.TestCase):
-    def test_live_rules_risk_two_dollars(self):
+    def test_live_rules_full_capital(self):
         from agent.profiles import live_rules
         d = risk.evaluate(sig(stop=57000.0, target=69000.0), live_rules(), 25.7, 25.7, 25.7, [], GROUPS, 25.7)
         self.assertTrue(d.approved)
-        self.assertAlmostEqual(d.risk_amount, 2.0)
+        self.assertAlmostEqual(d.size * 60000, 25.7 * 0.98)
 
     def test_live_rules_reject_below_exchange_minimum(self):
         from agent.profiles import live_rules
         # stop très large : 2 $ de risque ne permettent qu'une position de ~5 $
-        d = risk.evaluate(sig(stop=36000.0, target=130000.0), live_rules(), 25.7, 25.7, 25.7, [], GROUPS, 25.7)
+        rules = live_rules()
+        rules.capital_fraction = None
+        d = risk.evaluate(sig(stop=36000.0, target=130000.0), rules, 25.7, 25.7, 25.7, [], GROUPS, 25.7)
         self.assertFalse(d.approved)
         self.assertIn("minimum", d.reason)
 

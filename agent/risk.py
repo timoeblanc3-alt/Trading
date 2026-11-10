@@ -65,6 +65,8 @@ def evaluate(signal, cfg, equity, peak, day_start_equity, positions, groups, sta
         return Decision(False, reason="budget de risque épuisé (risque total ou corrélé)")
 
     size = budget / signal.risk_per_unit
+    if cfg.capital_fraction:
+        size = equity * cfg.capital_fraction * 0.98 / signal.entry
     notional_open = sum(p["size"] * p["entry"] for p in positions)
     max_notional = equity * cfg.max_leverage - notional_open
     if size * signal.entry > max_notional:
