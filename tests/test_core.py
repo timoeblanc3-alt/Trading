@@ -172,3 +172,29 @@ class PaperProfileTests(unittest.TestCase):
                   "D": flat[:-1] + [105.0]}
         self.assertEqual(rotation.pick(closes, 110.0, 100.0)[:2], ["A", "D"])
         self.assertEqual(rotation.pick(closes, 90.0, 100.0), [])
+
+
+class PaperReplayTests(unittest.TestCase):
+    def test_missed_bars_are_replayed_with_entry_at_next_open(self):
+        import tempfile, json
+        from agent import __main__ as cli
+        from agent.profiles import lab_rules
+        from agent.config import MarketConfig
+        tmp = tempfile.mkdtemp()
+        cfg = Config(starting_equity=1000.0, risk=lab_rules(),
+                     market=MarketConfig(coins=["T"], correlated_groups=[], interval="4h"),
+                     state_path=f"{tmp}/s.json", journal_path=f"{tmp}/j.csv", cycles_path=f"{tmp}/c.log",
+                     analyst_log_path=f"{tmp}/a.jsonl")
+        # tendance haussière régulière, puis forte cassure deux bougies avant la fin
+        cs = [{"t": i, "close_time": i, "open": 100 + i * 0.1, "high": 101 + i * 0.1, "low": 99 + i * 0.1,
+               "close": 100 + i * 0.1 + (0.6 if i % 2 else -0.6), "volume": 1.0} for i in range(300)]
+        cs[-3].update(close=140.0, high=140.5)
+        cs[-2].update(open=140.0, high=142.0, low=139.0, close=141.5)
+        cs[-1].update(open=141.5, high=143.0, low=140.5, close=142.0)
+        with open(cfg.state_path, "w") as f:
+            json.dump({"last_bar": {"T": cs[-4]["t"]}}, f)
+        cli.run_profile("t", cfg, {("T", "4h"): cs}, {"T": 142.0}, {}, 10**13)
+        state = json.load(open(cfg.state_path))
+        self.assertEqual(len(state["positions"]), 1)
+        self.assertAlmostEqual(state["positions"][0]["entry"], 140.0 * (1 + cfg.execution.slippage))
+        self.assertEqual(state["last_bar"]["T"], cs[-1]["t"])

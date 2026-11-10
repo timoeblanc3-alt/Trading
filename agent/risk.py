@@ -41,7 +41,9 @@ def evaluate(signal, cfg, equity, peak, day_start_equity, positions, groups, sta
         return Decision(False, reason="position déjà ouverte sur cet actif")
     if len(positions) >= cfg.max_positions:
         return Decision(False, reason=f"maximum de {cfg.max_positions} positions atteint")
-    if signal.reward_risk < cfg.min_reward_risk:
+    # Le ratio est vérifié sur le signal (strategies.best_signal) ; ici on ne rejette que s'il s'est
+    # nettement dégradé à l'exécution (saut de prix), pas pour le glissement normal de quelques dixièmes.
+    if signal.reward_risk < 0.8 * cfg.min_reward_risk:
         return Decision(False, reason=f"ratio gain/risque {signal.reward_risk:.1f} < {cfg.min_reward_risk}")
     if signal.risk_per_unit <= 0:
         return Decision(False, reason="stop invalide")

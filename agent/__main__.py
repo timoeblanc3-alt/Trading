@@ -120,42 +120,58 @@ def open_signal(cfg, pf, sig, now, mids, x, i, ctx):
 
 
 def run_profile(name, cfg, market, mids, ctxs, now):
-    """Un cycle de paper trading pour un profil ; renvoie les lignes du compte rendu."""
+    """Un cycle de paper trading pour un profil ; renvoie les lignes du compte rendu.
+    Toutes les bougies clôturées depuis le dernier passage sont rejouées dans l'ordre (indispensable
+    en 4h, l'agent ne passant qu'une fois par jour) : une entrée décidée sur une bougie déjà suivie
+    d'une autre se fait à l'ouverture de cette dernière, comme dans les backtests."""
     os.makedirs(os.path.dirname(cfg.state_path), exist_ok=True)
     state = load_state(cfg)
     last_bar = (state or {}).get("last_bar", {})
     pf = Portfolio(cfg, state)
     lines = [f"[{name}]"]
+    opened = closed = 0
 
     for coin in cfg.market.coins:
-        cs = market[coin]
+        cs = market.get((coin, cfg.market.interval))
+        if not cs or coin not in mids:
+            continue
         x = strategies.compute(cs, cfg.params)
-        i = len(cs) - 1
-        bar_t = cs[i]["t"]
         funding = ctxs.get(coin, {}).get("funding", 0.0)
-        new_bar = last_bar.get(coin) != bar_t
-        line = f"  {coin:4s} {mids[coin]:>10,.2f}  funding {funding * 100:+.4f} %/h"
-
-        if new_bar:
-            for t in pf.manage(coin, x, i, bar_t):
+        last = last_bar.get(coin)
+        todo = [len(cs) - 1] if last is None else [j for j in range(len(cs)) if cs[j]["t"] > last]
+        events = []
+        for j in todo:
+            for t in pf.manage(coin, x, j, cs[j]["t"]):
                 journal(cfg, t)
-                line += f"  → fermé ({t['exit_reason']}) {t['r']:+.2f} R"
-            last_bar[coin] = bar_t
-
-        if any(p["coin"] == coin for p in pf.positions):
-            p = next(p for p in pf.positions if p["coin"] == coin)
-            line += f"  | position {p['side']} depuis {p['entry']:.2f}, stop {p['stop']:.2f}"
-        elif new_bar:
-            sig = strategies.best_signal(coin, x, i, funding, cfg.risk.min_reward_risk)
+                closed += 1
+                events.append(f"fermé ({t['exit_reason']}) {t['r']:+.2f} R")
+            if any(p["coin"] == coin for p in pf.positions):
+                continue
+            sig = strategies.best_signal(coin, x, j, funding, cfg.risk.min_reward_risk)
             if sig:
-                line += "  " + open_signal(cfg, pf, replace(sig, entry=mids[coin]), now, mids, x, i, ctxs.get(coin, {}))
-            else:
-                line += "  | pas de setup"
-        lines.append(line)
+                live_bar = j == len(cs) - 1
+                entry = mids[coin] if live_bar else cs[j + 1]["open"]
+                ts = now if live_bar else cs[j + 1]["t"]
+                msg = open_signal(cfg, pf, replace(sig, entry=entry), ts, {**mids, coin: entry}, x, j,
+                                  ctxs.get(coin, {}))
+                if "OUVERT" in msg:
+                    opened += 1
+                events.append(msg.replace("→ ", ""))
+        last_bar[coin] = cs[-1]["t"]
+        pos = next((p for p in pf.positions if p["coin"] == coin), None)
+        if events or pos or len(cfg.market.coins) <= 5:
+            line = f"  {coin:5s} {mids[coin]:>10,.4f}"
+            if pos:
+                line += f"  | position {pos['side']} depuis {pos['entry']:.4f}, stop {pos['stop']:.4f}"
+            line += "".join(f"  → {e}" for e in events) or ("" if pos else "  | pas de setup")
+            lines.append(line)
 
     eq = pf.mark(now, mids)
     save_state(cfg, pf, last_bar)
-    lines.append(f"  Capital fictif : {eq:.2f} $ ({eq - cfg.starting_equity:+.2f} $), {len(pf.trades)} trade(s) clôturé(s)")
+    wins = sum(1 for t in pf.trades if t["pnl"] > 0)
+    avg_r = sum(t["r"] for t in pf.trades) / len(pf.trades) if pf.trades else 0.0
+    lines.append(f"  Capital fictif : {eq:.2f} $ ({eq / cfg.starting_equity - 1:+.1%}) · {len(pf.trades)} trade(s) "
+                 f"clôturé(s), {wins} gagnant(s), {avg_r:+.2f} R en moyenne · {len(pf.positions)} ouvert(s)")
     with open(cfg.cycles_path, "a") as f:
         f.write(f"Cycle du {fmt_ts(now)} UTC\n" + "\n".join(lines) + "\n\n")
     return lines
@@ -166,9 +182,18 @@ def cmd_step(cfg, args):
     mids = hyperliquid.mid_prices()
     ctxs = hyperliquid.asset_contexts()
     now = int(time.time() * 1000)
-    market = {c: hyperliquid.candles(c, cfg.market.interval, cfg.market.history_bars) for c in cfg.market.coins}
+    confs = profiles.configs()
+    market = {}
+    for pcfg in confs.values():
+        for coin in pcfg.market.coins:
+            key = (coin, pcfg.market.interval)
+            if key not in market:
+                try:
+                    market[key] = hyperliquid.candles(coin, pcfg.market.interval, pcfg.market.history_bars)
+                except Exception as e:
+                    print(f"  {coin} {pcfg.market.interval} : données indisponibles ({e})")
     print(f"Cycle du {fmt_ts(now)} UTC")
-    for name, pcfg in profiles.configs().items():
+    for name, pcfg in confs.items():
         print("\n".join(run_profile(name, pcfg, market, mids, ctxs, now)))
     lines = ["[rotation]"]
     rotation.step(profiles.LIVE_START, log=lines.append)
