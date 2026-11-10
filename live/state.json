@@ -1,6 +1,6 @@
 {
-  "start_equity": 25.67624597,
-  "peak": 25.67624597,
+  "start_equity": 20.676246,
+  "peak": 20.676246,
   "positions": {
     "SOL": {
       "side": "short",
@@ -20,5 +20,6 @@
     "BTC": 1794096000000,
     "ETH": 1794096000000,
     "SOL": 1794096000000
-  }
+  },
+  "note": "D\u00e9part et plus haut recal\u00e9s de -5 $ le 10/11/2026 : retrait volontaire du propri\u00e9taire le 28/10, ce n'est pas une perte."
 }
