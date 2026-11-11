@@ -1,6 +1,6 @@
 {
   "start_equity": 20.676246,
-  "peak": 23.19837097,
+  "peak": 23.219897969999998,
   "positions": {
     "SOL": {
       "side": "short",
@@ -13,13 +13,13 @@
       "strategy": "donchian",
       "reason": "cassure du plus bas 20 bougies, sous la MM200, ADX 28",
       "analyst": "Analyste injoignable (r\u00e9seau) : signal m\u00e9canique seul.",
-      "last_trail_bar": 1794182400000
+      "last_trail_bar": 1794268800000
     }
   },
   "last_bar": {
-    "BTC": 1794182400000,
-    "ETH": 1794182400000,
-    "SOL": 1794182400000
+    "BTC": 1794268800000,
+    "ETH": 1794268800000,
+    "SOL": 1794268800000
   },
   "note": "D\u00e9part et plus haut recal\u00e9s de -5 $ le 10/11/2026 : retrait volontaire du propri\u00e9taire le 28/10, ce n'est pas une perte."
 }
