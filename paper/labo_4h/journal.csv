@@ -1,2 +1,4 @@
 ouverture,fermeture,actif,sens,stratégie,entrée,sortie,taille,pnl,r,raison_sortie,thèse
 2026-11-10 16:00,2026-11-11 16:00,ETH,short,donchian,2021.6887,2102.3512,0.125428,-10.35,-1.04,stop,"cassure du plus bas 20 bougies, sous la MM200, ADX 50"
+2026-11-10 16:00,2026-11-13 00:00,BTC,short,donchian,73147.4080,69429.1474,0.005159,18.85,1.88,objectif,"cassure du plus bas 20 bougies, sous la MM200, ADX 44"
+2026-11-10 15:15,2026-11-13 00:00,SOL,short,donchian,84.4742,78.3563,2.968066,17.94,1.79,objectif,"cassure du plus bas 20 bougies, sous la MM200, ADX 40"

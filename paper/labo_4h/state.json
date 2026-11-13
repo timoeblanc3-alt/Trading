@@ -1,36 +1,22 @@
 {
-  "balance": 989.3672447522648,
-  "peak": 1009.2634812243707,
-  "day": "2026-11-12",
-  "day_start_equity": 1009.2634812243707,
+  "balance": 1026.3271760040454,
+  "peak": 1024.4971099298518,
+  "day": "2026-11-13",
+  "day_start_equity": 1019.4391818829254,
   "positions": [
     {
-      "coin": "SOL",
+      "coin": "ETH",
       "side": "short",
-      "entry": 84.47424175,
-      "size": 2.9680657827724213,
-      "stop": 87.84343931227882,
-      "target": 78.31712137544238,
-      "initial_stop": 87.84343931227882,
-      "initial_risk": 3.3691975622788135,
+      "entry": 1932.7331500000003,
+      "size": 0.13056186476945114,
+      "stop": 2010.8140799624416,
+      "target": 1777.971840075117,
+      "initial_stop": 2010.8140799624416,
+      "initial_risk": 78.08092996244136,
       "strategy": "donchian",
-      "reason": "cassure du plus bas 20 bougies, sous la MM200, ADX 40",
-      "opened": 1794323721137,
-      "fees": 0.11282629790871923
-    },
-    {
-      "coin": "BTC",
-      "side": "short",
-      "entry": 73147.40800000001,
-      "size": 0.00515853989212657,
-      "stop": 75087.77490151663,
-      "target": 69394.45019696672,
-      "initial_stop": 75087.77490151663,
-      "initial_risk": 1940.3669015166233,
-      "strategy": "donchian",
-      "reason": "cassure du plus bas 20 bougies, sous la MM200, ADX 44",
-      "opened": 1794326400000,
-      "fees": 0.1698002199781462
+      "reason": "cassure du plus bas 20 bougies, sous la MM200, ADX 55",
+      "opened": 1794542400000,
+      "fees": 0.1135535598745809
     }
   ],
   "trades": [
@@ -49,11 +35,43 @@
       "pnl": -10.350128729848374,
       "fees": 0.23277193971712848,
       "r": -1.0365079738323877
+    },
+    {
+      "coin": "BTC",
+      "side": "short",
+      "entry": 73147.40800000001,
+      "size": 0.00515853989212657,
+      "initial_stop": 75087.77490151663,
+      "strategy": "donchian",
+      "reason": "cassure du plus bas 20 bougies, sous la MM200, ADX 44",
+      "opened": 1794326400000,
+      "exit": 69429.1474220652,
+      "closed": 1794528000000,
+      "exit_reason": "objectif",
+      "pnl": 18.849826438626284,
+      "fees": 0.3309690819720232,
+      "r": 1.8832011230137833
+    },
+    {
+      "coin": "SOL",
+      "side": "short",
+      "entry": 84.47424175,
+      "size": 2.9680657827724213,
+      "initial_stop": 87.84343931227882,
+      "strategy": "donchian",
+      "reason": "cassure du plus bas 20 bougies, sous la MM200, ADX 40",
+      "opened": 1794323721137,
+      "exit": 78.3562799361301,
+      "closed": 1794528000000,
+      "exit_reason": "objectif",
+      "pnl": 17.941031855142167,
+      "fees": 0.21748126491341346,
+      "r": 1.7941031855142167
     }
   ],
   "last_bar": {
-    "BTC": 1794470400000,
-    "ETH": 1794470400000,
-    "SOL": 1794470400000
+    "BTC": 1794556800000,
+    "ETH": 1794556800000,
+    "SOL": 1794556800000
   }
 }
