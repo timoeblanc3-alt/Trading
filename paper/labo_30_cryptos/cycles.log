@@ -30,3 +30,17 @@ Cycle du 2026-11-13 14:55 UTC
   ENA       0.1392  | position short depuis 0.1391, stop 0.1756  → OUVERT short (donchian) : cassure du plus bas 20 bougies, sous la MM200, ADX 27, risque 1.00% du capital. Analyste : Analyste injoignable (réseau) : signal mécanique seul.
   Capital fictif : 1011.64 $ (+1.2%) · 0 trade(s) clôturé(s), 0 gagnant(s), +0.00 R en moyenne · 5 ouvert(s)
 
+Cycle du 2026-11-14 13:48 UTC
+[labo_30_cryptos]
+  ETH   1,891.7500  | position short depuis 2052.0235, stop 2253.3736
+  SOL      75.5675  | position short depuis 84.0754, stop 92.3220
+  XRP       0.9953  | position short depuis 0.9948, stop 1.1240  → OUVERT short (donchian) : cassure du plus bas 20 bougies, sous la MM200, ADX 28, risque 1.00% du capital. Analyste : Analyste injoignable (réseau) : signal mécanique seul.
+  DOGE      0.0625  → signal short refusé par le risk manager : ratio gain/risque 1.4 < 2.0
+  BNB     607.7100  → signal short refusé par le risk manager : ratio gain/risque 1.0 < 2.0
+  AAVE    105.9050  | position short depuis 113.4882, stop 132.6425
+  DOT       0.7806  | position short depuis 0.8635, stop 0.9671
+  ETC       6.2592  → signal short refusé par le risk manager : ratio gain/risque 1.4 < 2.0
+  WLD       0.2769  → signal short refusé par le risk manager : ratio gain/risque 1.4 < 2.0
+  ENA       0.1259  | position short depuis 0.1391, stop 0.1756
+  Capital fictif : 1033.69 $ (+3.4%) · 0 trade(s) clôturé(s), 0 gagnant(s), +0.00 R en moyenne · 6 ouvert(s)
+

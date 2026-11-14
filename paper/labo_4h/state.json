@@ -1,8 +1,8 @@
 {
-  "balance": 1026.3271760040454,
-  "peak": 1024.4971099298518,
-  "day": "2026-11-13",
-  "day_start_equity": 1019.4391818829254,
+  "balance": 1026.2428586919716,
+  "peak": 1031.6780124921715,
+  "day": "2026-11-14",
+  "day_start_equity": 1031.6780124921715,
   "positions": [
     {
       "coin": "ETH",
@@ -17,6 +17,20 @@
       "reason": "cassure du plus bas 20 bougies, sous la MM200, ADX 55",
       "opened": 1794542400000,
       "fees": 0.1135535598745809
+    },
+    {
+      "coin": "SOL",
+      "side": "short",
+      "entry": 74.9854885,
+      "size": 2.4987742076067176,
+      "stop": 79.11422493945723,
+      "target": 66.86455012108554,
+      "initial_stop": 79.11422493945723,
+      "initial_risk": 4.128736439457228,
+      "strategy": "donchian",
+      "reason": "cassure du plus bas 20 bougies, sous la MM200, ADX 49",
+      "opened": 1794628800000,
+      "fees": 0.08431731207386556
     }
   ],
   "trades": [
@@ -70,8 +84,8 @@
     }
   ],
   "last_bar": {
-    "BTC": 1794556800000,
-    "ETH": 1794556800000,
-    "SOL": 1794556800000
+    "BTC": 1794643200000,
+    "ETH": 1794643200000,
+    "SOL": 1794643200000
   }
 }
