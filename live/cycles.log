@@ -172,3 +172,11 @@ Compte : 23.95 USDC (capital utilisé 23.95 $, départ 20.676246) — ORDRES RÉ
   SOL : position short 0.11 @ 95.594, stop 95.5940
   Une position est déjà ouverte : pas de nouvelle entrée.
 
+Cycle réel du 2026-11-14 13:50 UTC
+  Compte unifié (unifiedAccount) : USDC Spot 22.66, PnL latent +0.00
+Compte : 22.66 USDC (capital utilisé 22.66 $, départ 20.676246) — ORDRES RÉELS
+  SOL : position fermée sur l'exchange (stop ou objectif atteint)
+  BTC 66,802.50 : pas de setup
+  ETH 1,892.25 : pas de setup
+  SOL 75.61 : pas de setup
+
