@@ -13,13 +13,13 @@
       "strategy": "donchian",
       "reason": "cassure du plus bas 20 bougies, sous la MM200, ADX 29",
       "analyst": "Analyste injoignable (r\u00e9seau) : signal m\u00e9canique seul.",
-      "last_trail_bar": null
+      "last_trail_bar": 1794700800000
     }
   },
   "last_bar": {
-    "BTC": 1794614400000,
-    "ETH": 1794614400000,
-    "SOL": 1794614400000
+    "BTC": 1794700800000,
+    "ETH": 1794700800000,
+    "SOL": 1794700800000
   },
   "note": "D\u00e9part et plus haut recal\u00e9s de -5 $ le 10/11/2026 : retrait volontaire du propri\u00e9taire le 28/10, ce n'est pas une perte."
 }
