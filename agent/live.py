@@ -16,6 +16,7 @@ import math
 import os
 import time
 from dataclasses import dataclass, replace
+from typing import Optional
 
 from . import analyst, hyperliquid, notify, strategies
 from .config import Config
@@ -25,12 +26,19 @@ MIN_NOTIONAL = 10.0  # minimum Hyperliquid par ordre, en USDC
 
 @dataclass
 class LiveConfig:
-    max_capital: float = 27.0       # capital que l'agent a le droit d'utiliser
+    # Choix du propriétaire (20/11/2026) : plus de plafond, l'agent utilise tout le compte.
+    # Mettre un nombre (ex. 27.0) pour revenir à un capital plafonné.
+    max_capital: Optional[float] = None
     max_risk_usd: float = 2.0       # perte maximale par trade si capital_fraction est None
     # Choix du propriétaire (10/11/2026) : chaque position vaut 100 % du capital (levier 1x).
     # La perte si le stop est touché varie alors avec la distance du stop (≈ 5 à 10 % du capital).
     capital_fraction: float = 1.0
-    halt_loss_usd: float = 6.0      # perte cumulée qui arrête toute nouvelle ouverture (≈ 3 stops)
+    # Arrêt des ouvertures après une perte cumulée de 25 % du capital de départ (≈ 6 $ sur 25 $,
+    # comme avant). Proportionnel pour rester cohérent quand le compte grossit.
+    halt_loss_fraction: float = 0.25
+    halt_loss_usd: Optional[float] = None  # si renseigné, remplace la règle en pourcentage
+    # Dépôts/retraits suivis à partir du 20/11/2026 00:00 UTC (le retrait du 28/10 est déjà recalé).
+    ledger_start_ms: int = 1795132800000
     max_leverage: int = 3
     entry_slippage: float = 0.01    # prix limite de l'ordre au marché
     stop_slippage: float = 0.05     # prix limite du stop une fois déclenché (priorité à l'exécution)
@@ -65,6 +73,26 @@ def plan_entry(sig, mid, capital, risk_usd, lcfg, sz_decimals):
     if size * mid < MIN_NOTIONAL:
         return 0.0, f"position de {size * mid:.2f} $ sous le minimum de {MIN_NOTIONAL:.0f} $"
     return size, None
+
+
+def transfer_amount(delta, address):
+    """Montant en USDC entrant (+) ou sortant (−) du compte pour un mouvement du registre.
+    Les transferts internes spot ↔ perp (accountClassTransfer) ne changent pas le total : 0."""
+    kind = delta.get("type")
+    me = address.lower()
+    if kind == "deposit":
+        return float(delta.get("usdc", 0))
+    if kind == "withdraw":
+        return -(float(delta.get("usdc", 0)) + float(delta.get("fee", 0)))
+    if kind in ("send", "spotTransfer", "internalTransfer", "subAccountTransfer"):
+        if delta.get("token", "USDC") != "USDC":
+            return 0.0
+        amount = float(delta.get("usdc", delta.get("amount", 0)))
+        if str(delta.get("destination", "")).lower() == me:
+            return amount
+        if str(delta.get("user", me)).lower() == me:
+            return -(amount + float(delta.get("fee", 0)))
+    return 0.0
 
 
 def _status(res):
@@ -124,6 +152,41 @@ class LiveTrader:
         self.log(f"    {label} {coin} à {trigger} : {kind} {detail if kind == 'error' else ''}")
         return kind, detail
 
+    # --- dépôts et retraits -----------------------------------------------------------------
+    def halt_limit(self):
+        if self.lcfg.halt_loss_usd is not None:
+            return self.lcfg.halt_loss_usd
+        return (self.state.get("start_equity") or 0.0) * self.lcfg.halt_loss_fraction
+
+    def _apply_transfers(self):
+        """Un dépôt ou un retrait n'est ni un gain ni une perte : on décale le capital de départ
+        et le plus haut du même montant, pour que l'arrêt sur perte reste juste."""
+        st = self.state
+        now = int(time.time() * 1000)
+        if st.get("start_equity") is None:  # tout premier cycle : le solde actuel sert de départ
+            st["ledger_since"] = now
+            return
+        since = st.setdefault("ledger_since", self.lcfg.ledger_start_ms)
+        fetch = getattr(self.info, "user_non_funding_ledger_updates", None)
+        if fetch is None:
+            return
+        try:
+            updates = fetch(self.addr, since + 1, now) or []
+        except Exception as e:
+            self.log(f"  Lecture des dépôts/retraits impossible ({e}) : nouvel essai au prochain cycle.")
+            return
+        for u in sorted(updates, key=lambda u: u.get("time", 0)):
+            amount = transfer_amount(u.get("delta", {}), self.addr)
+            if amount and st.get("start_equity") is not None:
+                st["start_equity"] = round(st["start_equity"] + amount, 6)
+                st["peak"] = round(max(st.get("peak", 0.0) + amount, 0.0), 6)
+                kind = "Dépôt" if amount > 0 else "Retrait"
+                self.log(f"  {kind} de {abs(amount):.2f} USDC détecté : capital de départ recalé à "
+                         f"{st['start_equity']:.2f} $ (ni gain ni perte).")
+                self._journal({"evt": "transfer", "date": _now(), "amount": amount,
+                               "start_equity": st["start_equity"]})
+            st["ledger_since"] = max(st["ledger_since"], u.get("time", 0))
+
     # --- cycle ------------------------------------------------------------------------------
     def cycle(self):
         us = self.info.user_state(self.addr)
@@ -134,8 +197,9 @@ class LiveTrader:
         meta = hyperliquid.asset_contexts()
         mids = hyperliquid.mid_prices()
 
-        capital = min(equity, self.lcfg.max_capital)
+        capital = equity if self.lcfg.max_capital is None else min(equity, self.lcfg.max_capital)
         st = self.state
+        self._apply_transfers()
         if st["start_equity"] is None and equity > 0:
             st["start_equity"] = capital
         st["peak"] = max(st["peak"], capital)
@@ -169,10 +233,11 @@ class LiveTrader:
 
         # 2. Nouvelle position : une seule à la fois, uniquement sur une nouvelle bougie.
         loss = (st["start_equity"] or capital) - capital
+        halt = self.halt_limit()
         if os.path.exists(self.lcfg.stop_file):
             self.log("  ⛔ Fichier live/STOP présent : aucune nouvelle ouverture.")
-        elif loss >= self.lcfg.halt_loss_usd:
-            self.log(f"  ⛔ Perte cumulée de {loss:.2f} $ ≥ {self.lcfg.halt_loss_usd:.2f} $ : "
+        elif loss >= halt:
+            self.log(f"  ⛔ Perte cumulée de {loss:.2f} $ ≥ {halt:.2f} $ : "
                      "arrêt des ouvertures, revue humaine nécessaire.")
             if not st.get("halt_notified"):
                 st["halt_notified"] = True

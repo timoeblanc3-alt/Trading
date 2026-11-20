@@ -167,6 +167,49 @@ class CycleTests(unittest.TestCase):
         self.assertEqual(t.state["start_equity"], 25.70)
         self.assertIn("open", [c[0] for c in ex.calls])
 
+    def test_no_capital_cap_uses_whole_account(self):
+        ex = FakeExchange()
+        t = self.run_cycle(FakeInfo(equity=226.0), ex)
+        self.assertEqual(t.state["start_equity"], 226.0)
+        opened = [c for c in ex.calls if c[0] == "open"][0]
+        self.assertGreater(opened[3] * MIDS["BTC"], 200)   # position ≈ 100 % du compte
+
+    def test_halt_is_proportional(self):
+        self.run_cycle(FakeInfo(equity=200.0), FakeExchange(), signal_coin=None)
+        ex = FakeExchange()
+        with mock.patch.object(live.strategies, "best_signal",
+                               return_value=Signal("BTC", "long", 82000, 77000, 92000, "donchian", "t")):
+            t = live.LiveTrader(ex, FakeInfo(equity=190.0), "0xabc", self.lcfg, send=True, log=lambda m: None)
+            t.state["last_bar"] = {}
+            t.cycle()                       # -10 $ sur 200 $ : on continue
+        self.assertIn("open", [c[0] for c in ex.calls])
+        ex = FakeExchange()
+        with mock.patch.object(live.strategies, "best_signal",
+                               return_value=Signal("BTC", "long", 82000, 77000, 92000, "donchian", "t")):
+            t = live.LiveTrader(ex, FakeInfo(equity=149.0), "0xabc", self.lcfg, send=True, log=lambda m: None)
+            t.state["last_bar"], t.state["positions"] = {}, {}
+            t.cycle()                       # -51 $ sur 200 $ (> 25 %) : arrêt
+        self.assertEqual(ex.calls, [])
+
+    def test_deposit_shifts_start_equity(self):
+        self.run_cycle(FakeInfo(equity=26.0), FakeExchange(), signal_coin=None)
+        info = FakeInfo(equity=226.0)
+        info.user_non_funding_ledger_updates = lambda addr, a, b: [
+            {"time": a + 10, "delta": {"type": "deposit", "usdc": "200.0"}},
+            {"time": a + 20, "delta": {"type": "accountClassTransfer", "usdc": "200.0", "toPerp": True}}]
+        t = self.run_cycle(info, FakeExchange(), signal_coin=None)
+        self.assertAlmostEqual(t.state["start_equity"], 226.0)
+        self.assertGreaterEqual(t.state["peak"], 226.0)
+
+    def test_transfer_amounts(self):
+        me = "0xAbC"
+        self.assertEqual(live.transfer_amount({"type": "withdraw", "usdc": "5", "fee": "1"}, me), -6.0)
+        self.assertEqual(live.transfer_amount({"type": "send", "token": "USDC", "amount": "3",
+                                               "user": "0xother", "destination": "0xabc"}, me), 3.0)
+        self.assertEqual(live.transfer_amount({"type": "spotTransfer", "token": "HYPE", "amount": "3",
+                                               "user": "0xabc", "destination": "0xother"}, me), 0.0)
+        self.assertEqual(live.transfer_amount({"type": "accountClassTransfer", "usdc": "9"}, me), 0.0)
+
 
 if __name__ == "__main__":
     unittest.main()

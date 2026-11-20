@@ -8,7 +8,7 @@
 | Un agent qui analyse le marché comme un expert | Stratégie de suivi de tendance (méthode des Turtles), filtres MM200, ADX et funding, analyste IA Claude qui peut refuser un trade (si une clé Anthropic est ajoutée) | ✅ `docs/02-strategie.md` |
 | Se connecter à votre compte Hyperliquid | Clé API « trader sans retirer », secrets GitHub, compte unifié pris en charge | ✅ |
 | Prendre les trades automatiquement | Cycle réel chaque jour vers 8h (Paris), stop et objectif posés sur l'exchange | ✅ actif |
-| 27 $ de capital, 2 $ de risque max | Une position à la fois, levier 3x max, marge isolée, arrêt après 6 $ de perte | ✅ |
+| Tout le capital du compte (plus de plafond depuis le 20/11/2026), position = 100 % du capital | Une position à la fois, levier 1x, marge isolée, arrêt après 25 % de perte cumulée ; dépôts et retraits recalés automatiquement | ✅ |
 | Être prévenu à chaque trade sur le téléphone | Notifications ntfy : ouverture, fermeture, stop remonté, refus de l'IA, erreurs, arrêt | ✅ testé |
 | Prendre un trade aujourd'hui pour vérifier que tout marche | Aller-retour réel sur BTC (≈ 11,50 $), stop et objectif posés puis vérifiés, position refermée. Coût ≈ 1 centime | ✅ réussi |
 | Continuer à améliorer la stratégie en arrière-plan | Session de recherche automatique chaque dimanche à 7h56 : rapport + proposition, appliquée seulement avec votre accord | ✅ 1re le 25/10 |
