@@ -29,6 +29,16 @@ def btc_close_on(date):
     return float(rows[0]["o"]) if rows else None
 
 
+def low_since(coin, when):
+    """Plus bas atteint depuis le signalement (bougies 1 h) : l'invalidation compte même si le prix est remonté."""
+    t = int(dt.datetime.fromisoformat(when).replace(tzinfo=dt.timezone.utc).timestamp() * 1000)
+    body = json.dumps({"type": "candleSnapshot", "req": {"coin": coin, "interval": "1h", "startTime": t,
+                       "endTime": int(dt.datetime.now(dt.timezone.utc).timestamp() * 1000)}}).encode()
+    req = urllib.request.Request("https://api.hyperliquid.xyz/info", data=body, headers={"Content-Type": "application/json"})
+    rows = json.loads(urllib.request.urlopen(req, timeout=20).read())
+    return min((float(c["l"]) for c in rows), default=None)
+
+
 def main():
     px = mids()
     today = dt.datetime.now(dt.timezone.utc)
@@ -43,7 +53,8 @@ def main():
         perf = (p / float(r["prix"]) - 1) * 100
         rel = perf - (px["BTC"] / btc0 - 1) * 100
         age = max(0, (today - dt.datetime.fromisoformat(when).replace(tzinfo=dt.timezone.utc)).days)
-        invalid = p < float(r["invalidation"])
+        low = low_since(r["coin"], when)
+        invalid = low is not None and low < float(r["invalidation"])
         ok = rel > 0 and not invalid
         status = "invalidé" if invalid else ("en avance" if rel > 0 else "en retard")
         if age >= 7:
